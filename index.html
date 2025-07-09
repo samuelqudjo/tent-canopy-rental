@@ -114,15 +114,15 @@
 
       // Build booking object to send to Google Sheets
       const booking = {
-        name: document.getElementById("name").value,
-        phone: document.getElementById("phone").value,
-        item: selected["Item Name"],
-        quantity: quantity,
-        startDate: startDate,
-        endDate: endDate,
-        totalPrice: total
+      "Customer Name": document.getElementById("name").value,
+      "Phone": document.getElementById("phone").value,
+      "Item": selected["Item Name"],
+      "Quantity": quantity,
+      "Start Date": startDate,
+      "End Date": endDate,
+      "Total Price": total
       };
-
+      
       // ✅ POST booking to Google Sheets backend
       try {
         const res = await fetch(SHEET_API_POST, {
