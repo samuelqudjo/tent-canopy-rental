@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Canopy Rental</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    input, select { margin-bottom: 10px; display: block; width: 100%; padding: 8px; }
+    button { padding: 10px 20px; }
+  </style>
+</head>
+<body>
+  <h2>Book a Tent or Canopy</h2>
+  <form id="rentalForm">
+    <input type="text" id="name" placeholder="Customer Name" required />
+    <input type="tel" id="phone" placeholder="Phone Number" required />
+    <select id="itemSelect"></select>
+    <input type="number" id="quantity" placeholder="Quantity" required />
+    <input type="date" id="startDate" required />
+    <input type="date" id="endDate" required />
+    <input type="number" id="totalPrice" placeholder="Total Price" readonly />
+    <button type="submit">Book</button>
+  </form>
+
+  <script>
+    const SHEET_API_GET = https://script.google.com/macros/s/AKfycbxAh6GMehMDivC8eV4pnJLM4ow3ICkVKDZqdNlU1CXdbE6va0fpHx-GRjpAu47JolPF_g/exec; // replace with your Web App URL
+    const SHEET_API_POST = https://script.google.com/macros/s/AKfycbxAh6GMehMDivC8eV4pnJLM4ow3ICkVKDZqdNlU1CXdbE6va0fpHx-GRjpAu47JolPF_g/exec;
+
+    async function loadInventory() {
+      let response = await fetch(SHEET_API_GET);
+      let inventory = await response.json();
+      let select = document.getElementById("itemSelect");
+      inventory.forEach(item => {
+        let option = document.createElement("option");
+        option.value = JSON.stringify(item);
+        option.textContent = `${item["Item Name"]} - GHS${item["Price Per Day"]}/day (Qty: ${item.Quantity})`;
+        select.appendChild(option);
+      });
+    }
+
+    function calculatePrice(start, end, pricePerDay, quantity) {
+      let diff = (new Date(end) - new Date(start)) / (1000 * 3600 * 24) + 1;
+      return diff * pricePerDay * quantity;
+    }
+
+    document.getElementById("rentalForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      let item = JSON.parse(document.getElementById("itemSelect").value);
+      let quantity = parseInt(document.getElementById("quantity").value);
+      let start = document.getElementById("startDate").value;
+      let end = document.getElementById("endDate").value;
+      let price = calculatePrice(start, end, parseFloat(item["Price Per Day"]), quantity);
+
+      document.getElementById("totalPrice").value = price;
+
+      let data = {
+        name: document.getElementById("name").value,
+        phone: document.getElementById("phone").value,
+        item: item["Item Name"],
+        quantity: quantity,
+        startDate: start,
+        endDate: end,
+        totalPrice: price
+      };
+
+      let res = await fetch(SHEET_API_POST, {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" }
+      });
+
+      alert("Booking submitted!");
+      document.getElementById("rentalForm").reset();
+    });
+
+    loadInventory();
+  </script>
+</body>
+</html>
