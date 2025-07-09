@@ -113,32 +113,35 @@
       document.getElementById("totalPrice").value = total;
 
       // Build booking object to send to Google Sheets
-      const booking = {
-        name: document.getElementById("name").value,
-        phone: document.getElementById("phone").value,
-        item: selected["Item Name"],
-        quantity: quantity,
-        startDate: startDate,
-        endDate: endDate,
-        totalPrice: total
-      };
+const booking = {
+  "Customer Name": document.getElementById("name").value,
+  "Phone": document.getElementById("phone").value,
+  "Item": selected["Item Name"],
+  "Quantity": quantity,
+  "Start Date": startDate,
+  "End Date": endDate,
+  "Total Price": total
+};
 
-      // ✅ POST booking to Google Sheets backend
-  try {
-      const params = new URLSearchParams(booking).toString();
-      const url = `${SHEET_API_POST}?${params}`;
+// Send booking using GET request
+const params = new URLSearchParams(booking).toString();
+const url = `${SHEET_API_POST}?${params}`;
 
-      const res = await fetch(url);
-      const result = await res.json();
+try {
+  const res = await fetch(url);  // No method needed — defaults to GET
+  const result = await res.json();
 
-      if (result.result === "success") {
-      alert("Booking submitted!");
-      document.getElementById("rentalForm").reset();
-      } else {
-      alert("Failed to submit booking: " + result.message);
-    }
+  if (result.result === "success") {
+    alert("Booking submitted!");
+    document.getElementById("rentalForm").reset();
+  } else {
+    alert("Failed to submit booking: " + result.message);
+  }
+} catch (err) {
+  console.error("Booking error:", err);
+  alert("Error submitting booking. See console.");
+}
 
-    });
 
     async function loadInventory() {
   try {
