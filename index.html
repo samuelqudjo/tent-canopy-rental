@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>Canopy Rental Booking</title>
+
+  <!-- Basic styling for layout and readability -->
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -22,111 +24,143 @@
 </head>
 <body>
 
+  <!-- Page Title -->
   <h2>Book a Tent or Canopy</h2>
 
+  <!-- Booking Form -->
   <form id="rentalForm">
+    <!-- Customer Name -->
     <label for="name">Customer Name:</label>
     <input type="text" id="name" required />
 
+    <!-- Phone Number -->
     <label for="phone">Phone Number:</label>
     <input type="tel" id="phone" required />
 
+    <!-- Dropdown menu populated from Google Sheets -->
     <label for="itemSelect">Select Item:</label>
     <select id="itemSelect" required></select>
 
+    <!-- Quantity of item to rent -->
     <label for="quantity">Quantity:</label>
     <input type="number" id="quantity" min="1" required />
 
+    <!-- Rental period -->
     <label for="startDate">Start Date:</label>
     <input type="date" id="startDate" required />
 
     <label for="endDate">End Date:</label>
     <input type="date" id="endDate" required />
 
+    <!-- Total price is automatically calculated -->
     <label for="totalPrice">Total Price (GHS):</label>
     <input type="number" id="totalPrice" readonly />
 
+    <!-- Submit booking -->
     <button type="submit">Submit Booking</button>
   </form>
 
+  <!-- Script for form logic and API connection -->
   <script>
-    const SHEET_API_GET = "https://script.google.com/macros/s/AKfycbwCTwRc3yoYOISe1TQRdGw0eGMzXFMItNuGtBkZ2BvdVTG9Cz9WXgWKkl6jWcIEbzRJpA/exec";
-    const SHEET_API_POST = "https://script.google.com/macros/s/AKfycbwCTwRc3yoYOISe1TQRdGw0eGMzXFMItNuGtBkZ2BvdVTG9Cz9WXgWKkl6jWcIEbzRJpA/exec";
+    // ✅ Web App URL from Google Apps Script deployment
+    const SHEET_API_GET = "https://script.google.com/macros/s/AKfycbzpgPSDxv9ADS2MgJjHtTp5GfRAqR6NtBtmBl37fQNXTMS5cU-dSJEjjAKpzPUmtEWsIQ/exec";
+    const SHEET_API_POST = "https://script.google.com/macros/s/AKfycbzpgPSDxv9ADS2MgJjHtTp5GfRAqR6NtBtmBl37fQNXTMS5cU-dSJEjjAKpzPUmtEWsIQ/exec";
 
-    // Load inventory on page load
-    window.onload = async function () {
+    // ✅ Load available items from Google Sheets into the dropdown
+    async function loadInventory() {
       try {
-        const response = await fetch(SHEET_API_GET);
+        const response = await fetch(SHEET_API_GET); // Fetch inventory from backend
         const inventory = await response.json();
-        console.log("Inventory loaded:", inventory);
-
+        console.log("Loaded inventory:", inventory); // Debug output
         const select = document.getElementById("itemSelect");
-        inventory.forEach(item => {
-          const option = document.createElement("option");
-          option.value = JSON.stringify(item);
-          option.textContent = `${item["Item Name"]} - GHS${item["Price Per Day"]}/day (Qty: ${item["Quantity"]})`;
-          select.appendChild(option);
-        });
-      } catch (error) {
-        console.error("Error loading inventory:", error);
-        alert("Failed to load inventory.");
-      }
-    };
 
-    // Calculate price
+        if (Array.isArray(inventory)) {
+          inventory.forEach(item => {
+            const option = document.createElement("option");
+            option.value = JSON.stringify(item); // Save full object in option value
+            option.textContent = `${item["Item Name"]} - GHS${item["Price Per Day"]}/day (Qty: ${item["Quantity"]})`;
+            select.appendChild(option);
+          });
+        } else {
+          alert("Inventory data format is invalid.");
+        }
+      } catch (error) {
+        console.error("Failed to load inventory:", error);
+        alert("Could not load inventory. Check backend or API URL.");
+      }
+    }
+
+    // ✅ Calculate total price for booking
     function calculatePrice(startDate, endDate, rate, qty) {
       const start = new Date(startDate);
       const end = new Date(endDate);
-      const days = (end - start) / (1000 * 3600 * 24) + 1;
+      const days = (end - start) / (1000 * 3600 * 24) + 1; // Includes both days
       return days * rate * qty;
     }
 
-    // Submit booking
+    // ✅ Handle form submission
     document.getElementById("rentalForm").addEventListener("submit", async function (e) {
-      e.preventDefault();
+      e.preventDefault(); // Prevent page reload
 
-      try {
-        const selected = JSON.parse(document.getElementById("itemSelect").value);
-        const quantity = parseInt(document.getElementById("quantity").value);
-        const startDate = document.getElementById("startDate").value;
-        const endDate = document.getElementById("endDate").value;
+      // Get selected item and booking details
+      const selected = JSON.parse(document.getElementById("itemSelect").value);
+      const quantity = parseInt(document.getElementById("quantity").value);
+      const startDate = document.getElementById("startDate").value;
+      const endDate = document.getElementById("endDate").value;
 
-        const total = calculatePrice(startDate, endDate, parseFloat(selected["Price Per Day"]), quantity);
-        document.getElementById("totalPrice").value = total;
+      // Calculate price and display it
+      const total = calculatePrice(startDate, endDate, parseFloat(selected["Price Per Day"]), quantity);
+      document.getElementById("totalPrice").value = total;
 
-        const booking = {
-          "Customer Name": document.getElementById("name").value,
-          "Phone": document.getElementById("phone").value,
-          "Item": selected["Item Name"],
-          "Quantity": quantity,
-          "Start Date": startDate,
-          "End Date": endDate,
-          "Total Price": total
-        };
+      // Build booking object to send to Google Sheets
+      const booking = {
+        name: document.getElementById("name").value,
+        phone: document.getElementById("phone").value,
+        item: selected["Item Name"],
+        quantity: quantity,
+        startDate: startDate,
+        endDate: endDate,
+        totalPrice: total
+      };
 
-        const res = await fetch(SHEET_API_POST, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(booking)
-        });
+      // ✅ POST booking to Google Sheets backend
+  try {
+      const params = new URLSearchParams(booking).toString();
+      const url = `${SHEET_API_POST}?${params}`;
 
-        const rawText = await res.text();
-        console.log("Server response:", rawText);
+      const res = await fetch(url);
+      const result = await res.json();
 
-        const result = JSON.parse(rawText);
+      if (result.result === "success") {
+      alert("Booking submitted!");
+      document.getElementById("rentalForm").reset();
+      } else {
+      alert("Failed to submit booking: " + result.message);
+    }
 
-        if (result.result === "success") {
-          alert("Booking submitted!");
-          document.getElementById("rentalForm").reset();
-        } else {
-          alert("Failed to submit booking: " + (result.message || "Unknown error"));
-        }
-
-      } catch (err) {
-        console.error("Booking error:", err);
-        alert("Error submitting booking. See console for details.");
-      }
     });
+
+    async function loadInventory() {
+  try {
+    let response = await fetch(SHEET_API_GET);
+    let inventory = await response.json();
+    console.log("Inventory response:", inventory);
+    let select = document.getElementById("itemSelect");
+    inventory.forEach(item => {
+      let option = document.createElement("option");
+      option.value = JSON.stringify(item);
+      option.textContent = `${item["Item Name"]} - GHS${item["Price Per Day"]}/day (Qty: ${item.Quantity})`;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Error loading inventory:", error);
+  }
+}
+
+
+    // ✅ Run inventory loading when page loads
+    loadInventory();
+      console.log("Inventory response:", inventory);
   </script>
 
 </body>
