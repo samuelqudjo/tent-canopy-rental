@@ -145,24 +145,6 @@
       }
     });
 
-    async function loadInventory() {
-  try {
-    let response = await fetch(SHEET_API_GET);
-    let inventory = await response.json();
-    console.log("Inventory response:", inventory);
-    let select = document.getElementById("itemSelect");
-    inventory.forEach(item => {
-      let option = document.createElement("option");
-      option.value = JSON.stringify(item);
-      option.textContent = `${item["Item Name"]} - GHS${item["Price Per Day"]}/day (Qty: ${item.Quantity})`;
-      select.appendChild(option);
-    });
-  } catch (error) {
-    console.error("Error loading inventory:", error);
-  }
-}
-
-
     // ✅ Run inventory loading when page loads
     //loadInventory();
       console.log("Inventory response:", inventory);
